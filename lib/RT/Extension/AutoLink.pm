@@ -1,8 +1,31 @@
 package RT::Extension::AutoLink;
 use strict;
 use warnings;
+use Regexp::Common qw(URI);
 
 our $VERSION = '0.01';
+
+no warnings 'redefine';
+use RT::Ticket;
+my $orig = RT::Ticket->can('_RecordNote');
+*RT::Ticket::_RecordNote = sub {
+    my $self = shift;
+    my %args = @_;
+
+    my @ret = $self->$orig(@_);
+
+    my $content = $args{Content} || $args{MIMEObj}->stringify_body;
+
+    while ($content =~ /($RE{URI}{HTTP}{-keep}{-scheme => 'https?'}(?:#\S+)?)/g) {
+        $self->AddLink(
+            Target => $1,
+            Type   => 'RefersTo',
+        );
+    }
+
+    return @ret;
+};
+
 
 1;
 
