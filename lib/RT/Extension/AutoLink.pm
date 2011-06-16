@@ -7,12 +7,24 @@ our $VERSION = '0.01';
 
 no warnings 'redefine';
 use RT::Ticket;
-my $orig = RT::Ticket->can('_RecordNote');
+my $orig_recordnote = RT::Ticket->can('_RecordNote');
 *RT::Ticket::_RecordNote = sub {
     my $self = shift;
     my %args = @_;
 
-    my @ret = $self->$orig(@_);
+    my @ret = $self->$orig_recordnote(@_);
+
+    $self->AddRefersToLinksFromText($args{Content} || $args{MIMEObj}->stringify_body);
+
+    return @ret;
+};
+
+my $orig_create = RT::Ticket->can('Create');
+*RT::Ticket::Create = sub {
+    my $self = shift;
+    my %args = @_;
+
+    my @ret = $self->$orig_create(@_);
 
     $self->AddRefersToLinksFromText($args{Content} || $args{MIMEObj}->stringify_body);
 
