@@ -14,17 +14,22 @@ my $orig = RT::Ticket->can('_RecordNote');
 
     my @ret = $self->$orig(@_);
 
-    my $content = $args{Content} || $args{MIMEObj}->stringify_body;
+    $self->AddRefersToLinksFromText($args{Content} || $args{MIMEObj}->stringify_body);
 
-    while ($content =~ /($RE{URI}{HTTP}{-keep}{-scheme => 'https?'}(?:#\S+)?)/g) {
+    return @ret;
+};
+
+sub RT::Ticket::AddRefersToLinksFromText {
+    my $self = shift;
+    my $text = shift;
+
+    while ($text =~ /($RE{URI}{HTTP}{-keep}{-scheme => 'https?'}(?:#\S+)?)/g) {
         $self->AddLink(
             Target => $1,
             Type   => 'RefersTo',
         );
     }
-
-    return @ret;
-};
+}
 
 
 1;
